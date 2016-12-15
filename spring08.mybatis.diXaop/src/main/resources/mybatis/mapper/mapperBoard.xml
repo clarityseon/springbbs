@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mybatis.mapper.mapperBoard">
+    
+    <select id="getBoardName" parameterType="string" resultType="string">        
+        SELECT boardnm
+          FROM TB_Bbs_Board
+         WHERE boardcd = #{boardcd}
+    </select>
+    
+    <select id="getBoardOne" parameterType="string" resultType="ModelBoard">
+        SELECT boardcd, boardnm, UseYN 
+          FROM TB_Bbs_Board 
+         WHERE boardcd = #{boardcd}
+    </select>
+    
+    <select id="getBoardList" resultType="ModelBoard">
+        SELECT boardcd, boardnm, UseYN, InsertUID, InsertDT, UpdateUID, UpdateDT
+          FROM TB_Bbs_Board
+        ORDER BY boardnm
+    </select>         
+           
+    <resultMap id="bbsResultMap" type="java.util.HashMap">
+        <id property="boardcd"       column="boardcd" />
+        <result property="boardnm"   column="boardnm" />
+        <result property="UseYN"     column="UseYN" />
+        <result property="InsertUID" column="InsertUID" />
+        <result property="InsertDT"  column="InsertDT" />
+        <result property="UpdateUID" column="UpdateUID" />
+        <result property="UpdateDT"  column="UpdateDT" />
+    </resultMap>
+
+    <select id="getBoardListResultMap" resultType="ModelBoard">
+        SELECT * 
+          FROM TB_Bbs_Board 
+    </select>
+    
+    <insert id="insertBoard" parameterType="ModelBoard">
+        INSERT INTO 
+        TB_Bbs_Board ( boardcd   , boardnm   , UseYN    )
+        VALUES       ( #{boardcd}, #{boardnm}, #{UseYN} )
+    </insert>
+    
+   
+    
+    <update id="updateBoard" parameterType="ModelBoard">
+        UPDATE TB_Bbs_Board 
+           SET boardnm   = #{updatevalue.boardnm}
+             , UseYN     = #{updatevalue.UseYN}
+         WHERE boardcd   = #{searchvalue.boardcd}
+    </update>
+    
+    <delete id="deleteBoard" parameterType="ModelBoard">
+        DELETE FROM TB_Bbs_Board 
+         WHERE boardcd = #{board.boardcd}
+    </delete>
+    
+    <select id="getBoardSearch" resultType="ModelBoard">
+        SELECT boardcd, boardnm, UseYN 
+          FROM TB_Bbs_Board
+        WHERE 1=1
+         <if test="boardcd != null">
+           and boardcd LIKE '%'||#{boardcd}||'%'
+         </if>
+         <if test="boardnm != null">
+          AND boardnm LIKE '%'||#{boardnm}||'%'
+          </if>
+           
+    </select>
+
+  
+    
+    <select id="getBoardPaging" resultType="ModelBoard">
+    SELECT boardcd, boardnm, UseYN
+       FROM (
+          SELECT rownum r, a.*
+            FROM (
+                   SELECT  boardcd, boardnm, UseYN
+                   FROM TB_BBS_Board
+                   WHERE 1 = 1
+                         <if test="boardcd != null and boardcd != ''">
+                          AND boardcd = #{boardcd}
+                          </if>
+                         <if test="boardnm != null and boardnm != ''">
+                          AND ( boardnm LIKE #{searchword} )
+                         </if>
+                          GROUP BY boardcd, boardnm, UseYN
+                          ORDER BY boardcd DESC
+                    ) a
+               )
+      WHERE r BETWEEN #{start} AND #{end}
+         </select>
+    
+    
+    
+     <insert id="insertBoardList" parameterType="java.util.List">
+      INSERT ALL
+     <foreach collection="list" item="i" index="idx" >
+      INTO TB_Bbs_Board( boardcd , boardnm , UseYN ) VALUES ( #{i.boardcd} , #{i.boardnm} , #{i.UseYN} )
+       </foreach>
+      SELECT 1 FROM DUAL
+     </insert>
+    
+
+    <select id="getArticleTotalRecord" parameterType="hashmap" resultType="int">
+        SELECT count(*) FROM TB_Bbs_Article 
+         WHERE boardcd = #{boardcd}
+            <if test="searchWord != null">
+            AND (title LIKE '%||#{searchword}||%' OR content LIKE '%||#{searchword}||')
+            </if>
+    </select>   
+
+    <select id="getArticleList" parameterType="hashmap" resultType="ModelArticle">
+   
+        SELECT articleno, title, regdate, hit, attachfileNum, commentNum 
+        FROM (
+            SELECT rownum r, a.* 
+            FROM (
+                    SELECT a.articleno, 
+                           a.title, 
+                           a.regdate, 
+                           a.hit, 
+                           count(distinct(f.attachfileno)) attachfileNum, 
+                           count(distinct(c.commentno)) commentNum
+                    FROM 
+                        TB_Bbs_Article a
+                        LEFT OUTER JOIN TB_Bbs_Attachfile f ON a.articleno = f.articleno
+                        LEFT OUTER JOIN TB_Bbs_Comments   c ON a.articleno = c.articleno
+                    WHERE
+                        a.boardcd = #{boardcd}
+                        <if test="searchword != null and searchword != ''">
+                       AND ( title LIKE '%#{searchword}%' OR DBMS_LOB.INSTR(content, '#{searchword}') > 0 )
+                        </if>
+                    GROUP BY a.articleno, title, a.regdate, hit
+                    ORDER BY articleno DESC
+                 ) a
+            )
+        WHERE r BETWEEN #{start} AND #{end}
+    </select>  
+
+    
+    <select id="getArticle" parameterType="int" resultType="ModelArticle">
+        SELECT articleno, title, content, email, hit, regdate
+        FROM TB_Bbs_Article
+        WHERE articleno = #{articleno}
+    </select>
+    <insert id="insertArticle" parameterType="ModelArticle">
+        INSERT INTO 
+        TB_Bbs_Article ( boardcd   , title   , content   , email   , hit, regdate ,INSERTUID,INSERTDT,UPDATEUID, UPDATEDT )
+            VALUES     ( #{boardcd}, #{title}, #{content}, #{email}, 0  , #{regdate} ,#{INSERTUID},#{INSERTDT},#{UPDATEUID},#{UPDATEDT}  )
+    </insert>   
+    
+    <update id="updateArticle" parameterType="hashmap">
+        
+         UPDATE TB_Bbs_Article 
+            SET   title      =#{updatevalue.title}
+                , content    =#{updatevalue.content} 
+                , UseYN      =#{updatevalue.UseYN} 
+                , UPDATEUID  =#{updatevalue.UPDATEUID} 
+                , UPDATEDT   =#{updatevalue.UPDATEDT}
+                
+                
+             WHERE 1 = 1 
+             
+
+            <if test="searchvalue.articleno != null"> 
+            AND articleno = #{searchvalue.articleno} </if>
+
+            <if test="searchvalue.title != null"> 
+            AND title = #{searchvalue.title} </if>
+
+            <if test="searchvalue.UseYN != null"> 
+            AND UseYN = #{searchvalue.UseYN} </if>
+            
+            <if test="searchvalue.boardcd != null"> 
+            AND boardcd = #{searchvalue.boardcd} </if>
+           </update>
+    
+    
+    <delete id="deleteArticle" parameterType="ModelArticle">
+        DELETE FROM TB_Bbs_Article 
+         WHERE 1=1
+         
+         <if test="article.articleno != null"> 
+             and articleno = #{article.articleno} </if>
+             
+          <if test="article.boardcd != null"> 
+             AND boardcd = #{article.boardcd} </if>
+
+         <if test="article.email != null"> 
+             AND  email = #{article.email} </if>
+
+         <if test="article.UseYN != null"> 
+             AND  UseYN = #{article.UseYN} </if>
+        
+    </delete>
+    
+    <update id="increaseHit" parameterType="ModelArticle">
+        UPDATE TB_Bbs_Article SET hit=hit+1 
+         WHERE articleno=#{articleNo}
+    </update>
+    
+   <select id="getNextArticle" parameterType="hashmap" resultType="ModelArticle">
+        SELECT articleno, title
+        FROM
+            (SELECT rownum r,a.*
+            FROM
+                (SELECT articleno, title 
+                FROM TB_Bbs_Article 
+                WHERE 
+                    boardCd = #{boardcd} 
+                    AND articleno > #{articleno}
+                <if test="searchword != null and searchword != ''">
+                    AND (title LIKE '%${searchword}%' 
+                        OR DBMS_LOB.INSTR(content, '${searchword}') > 0)
+                </if>
+                ORDER BY articleno) 
+            a)
+        WHERE r = 1
+    </select>
+    
+    <select id="getPrevArticle" parameterType="hashmap" resultType="ModelArticle">
+      SELECT articleno, title
+        FROM
+            (SELECT rownum r,a.*
+            FROM
+                (SELECT articleno, title 
+                FROM TB_Bbs_Article 
+                WHERE 
+                    boardcd = #{boardcd} 
+                    AND articleno &lt; #{articleno}
+                <if test="searchword != null and searchword != ''">
+                    AND (title LIKE '%${searchword}%' 
+                        OR DBMS_LOB.INSTR(content, '${searchword}') > 0)
+                </if> 
+                ORDER BY articleno DESC)
+            a)
+        WHERE r = 1
+    </select>
+
+
+    <select id="getAttachFile" parameterType="int" resultType="ModelAttachfile">
+        SELECT attachfileno, filename, filetype, filesize, articleno
+          FROM TB_Bbs_Attachfile
+         WHERE attachfileno = #{attachfileno}
+    </select>
+    
+    <select id="getAttachFileList" parameterType="int" resultType="ModelAttachfile">
+        SELECT attachfileno, filename, filetype, filesize,articleno 
+          FROM TB_Bbs_Attachfile 
+         WHERE articleno = #{articleno} 
+        ORDER BY attachfileno
+    </select>
+    
+    <insert id="insertAttachFile" parameterType="ModelAttachfile">
+      
+        INSERT INTO TB_BBS_Attachfile (filename, filetype, filesize, articleno, InsertUID , InsertDT , UpdateUID , UpdateDT )
+        VALUES ( #{filename}, #{filetype}, #{filesize}, #{articleno}, #{insertuid}, #{insertdt}, #{updateuid}, #{updatedt} ) 
+        
+    </insert>
+    
+    <delete id="deleteAttachFile" parameterType="ModelAttachfile">
+        DELETE FROM TB_Bbs_Attachfile 
+         WHERE 1 =1
+         <if test="attachfileno != null"> 
+          attachfileno = #{attachfileno}</if>
+                  
+         <if test="articleno != null"> 
+             articleno = #{articleno} </if>
+         
+         <if test="UseYN != null"> 
+             AND UseYN = #{UseYN} </if>
+    </delete>
+    
+    
+    
+    <insert id="insertComment" parameterType="ModelComments">
+        INSERT INTO TB_BBS_Comments ( articleno, email, memo, regdate, InsertUID , InsertDT , UpdateUID , UpdateDT ) 
+          VALUES ( #{articleno}, #{email}, #{memo}, #{regdate}, #{InsertUID}, #{InsertDT}, #{UpdateUID}, #{UpdateDT} ) 
+    </insert>
+    
+    <update id="updateComment" parameterType="ModelComments">
+        UPDATE TB_Bbs_Comments 
+         SET memo       = #{updatevalue.memo} 
+           , email      = #{updatevalue.email} 
+           , UseYN      = #{updatevalue.UseYN} 
+         WHERE 1 =1
+           <if test="searchvalue.commentno != null"> 
+            and commentno = #{searchvalue.commentno}</if>
+    
+           <if test="searchvalue.articleno != null"> 
+            AND articleno = #{searchvalue.articleno} </if>
+
+            <if test="searchvalue.email != null"> 
+            AND email = #{searchvalue.email} </if>
+          
+           </update>
+    
+    <delete id="deleteComment" parameterType="ModelComments">
+        DELETE FROM TB_Bbs_Comments 
+         WHERE 1 =1
+         <if test="commentno != null"> 
+            and commentno = #{commentno}
+         </if>
+                  
+         
+         
+    </delete>
+    
+    <select id="getComment" parameterType="ModelComments" >
+        SELECT commentno,articleno,email,memo,regdate 
+        FROM TB_Bbs_Comments 
+        WHERE commentno = #{commentno}
+    </select>
+    
+    <select id="getCommentList" parameterType="int" resultType="ModelComments">
+        SELECT commentno, articleno, email, memo, regdate
+        FROM TB_Bbs_Comments
+        WHERE articleno = #{articleno}
+        ORDER BY commentno DESC
+    </select>
+
+ </mapper>

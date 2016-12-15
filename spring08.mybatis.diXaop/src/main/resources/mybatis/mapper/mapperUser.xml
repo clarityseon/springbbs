@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mybatis.mapper.mapperUser">
+
+    <insert id="insertUser" parameterType="ModelUser">
+     INSERT INTO 
+        TB_Bbs_user ( userid ,email, passwd , name, mobile,retireYN , InsertUID, InsertDT ,UpdateUID, UpdateDT    )
+        VALUES       ( #{userid}, #{email}, #{passwd},#{name},#{mobile},#{retireYN},#{InsertUID},#{InsertDT},#{UpdateUID},#{UpdateDT} )
+    </insert>
+
+    <select id="login" parameterType="ModelUser" resultType="ModelUser">
+     select * 
+     from TB_Bbs_user
+     where 1=1
+          <if test=" userid != null"> 
+          and userid = #{userid}  </if>
+          
+          <if test="passwd != null">
+          and passwd = #{passwd}  </if>
+    
+    </select>
+
+
+    <select id="logout" parameterType="String" resultType="ModelUser">
+    </select>
+
+
+    <update id="updateUserInfo" parameterType="ModelUser">
+     UPDATE TB_Bbs_user 
+            SET   passwd      =#{updatevalue.passwd}
+                , email       =#{updatevalue.email} 
+                , retireYN    =#{updatevalue.retireYN} 
+                , mobile      =#{updatevalue.mobile}
+                , UpdateUID   =#{updatevalue.UpdateUID} 
+                , UpdateDT    =#{updatevalue.UpdateDT}
+               
+             WHERE 1 = 1 
+           
+            <if test="searchvalue.userid != null"> 
+            AND userid = #{searchvalue.userid} </if>
+
+            <if test="searchvalue.email!= null"> 
+            AND email = #{searchvalue.email} </if>
+
+            <if test="searchvalue.name != null"> 
+            AND name = #{searchvalue.name} </if>
+            
+           
+    </update>
+
+    <update id="updatePasswd" parameterType="ModelUser">
+     UPDATE TB_Bbs_user 
+            SET   passwd      =#{updatevalue.passwd}
+                
+             WHERE 1 = 1 
+           
+            <if test="searchvalue.userid != null"> 
+            AND userid = #{searchvalue.userid} </if>
+
+            <if test="searchvalue.email!= null"> 
+            AND email = #{searchvalue.email} </if>
+
+            <if test="searchvalue.name != null"> 
+            AND name = #{searchvalue.name} </if>
+    
+    </update>
+
+    <delete id="deleteUser"  parameterType="ModelUser">
+    
+      DELETE FROM TB_Bbs_user 
+         WHERE 1=1
+         
+         <if test="userid != null"> 
+             and userid = #{userid} </if>
+             
+          <if test="passwd != null"> 
+             AND passwd = #{passwd} </if>
+
+         <if test="email != null"> 
+             AND  email = #{email} </if>
+
+         <if test="name!= null"> 
+             AND  name = #{name} </if>
+    </delete>
+
+    <select id="selectUserOne" parameterType="String" resultType="ModelUser">
+    
+    select * from TB_Bbs_user where userid =#{userid}
+    </select>
+
+    <select id="selectUserList" parameterType="ModelUser" resultType="ModelUser">
+     select * from TB_Bbs_user where userid =#{userid}
+    
+    </select>
+
+</mapper>
